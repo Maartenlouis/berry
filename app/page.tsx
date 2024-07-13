@@ -3,11 +3,12 @@ import React, { useState, useEffect } from "react";
 
 const CornLabyrinthPuzzle = () => {
   const [puzzleInputs, setPuzzleInputs] = useState<string[]>(
-    Array(14)
+    Array(15)
       .fill("")
       .map((_, index) => {
         if (index === 1) return "I";
-        if (index === 13) return "E";
+        if (index === 8) return "E";
+        if (index === 14) return "E";
         return "";
       })
   );
@@ -18,17 +19,19 @@ const CornLabyrinthPuzzle = () => {
   }, [puzzleInputs]);
 
   const handleInputChange = (index: number, value: string) => {
-    if (index === 1 || index === 13) return; // Prevent changing pre-filled values
+    if (index === 1 || index === 8 || index === 14) return; // Prevent changing pre-filled values
     const newInputs = [...puzzleInputs];
-    newInputs[index] = value.toUpperCase() as "I" | "E";
+    newInputs[index] = value.toUpperCase();
     setPuzzleInputs(newInputs);
   };
 
   const getStationNumber = (index: number) => {
-    if (index === 1 || index === 13) return "\u00A0"; // Non-breaking space
-    if (index > 1) index--;
-    if (index > 12) index--;
-    return index + 1;
+    if (index === 1 || index === 8 || index === 14) return "\u00A0"; // Non-breaking space
+    let stationNumber = index + 1;
+    if (index > 1) stationNumber--;
+    if (index > 8) stationNumber--;
+    if (index > 13) stationNumber--;
+    return stationNumber;
   };
 
   return (
@@ -49,7 +52,7 @@ const CornLabyrinthPuzzle = () => {
           jeweilige Feld ein.
         </p>
 
-        <div className="grid grid-cols-7 gap-2 mb-4">
+        <div className="grid grid-cols-5 gap-2 mb-4">
           {puzzleInputs.map((input, index) => (
             <div key={index} className="flex flex-col items-center">
               <span className="text-sm font-bold mb-1 h-5">
@@ -61,9 +64,11 @@ const CornLabyrinthPuzzle = () => {
                 value={input}
                 onChange={(e) => handleInputChange(index, e.target.value)}
                 className={`w-8 h-8 text-center border border-gray-300 rounded ${
-                  index === 1 || index === 13 ? "bg-gray-100" : ""
+                  index === 1 || index === 8 || index === 14
+                    ? "bg-gray-100"
+                    : ""
                 }`}
-                readOnly={index === 1 || index === 13}
+                readOnly={index === 1 || index === 8 || index === 14}
               />
             </div>
           ))}
