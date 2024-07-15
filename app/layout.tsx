@@ -16,6 +16,15 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="en">
+      <head>
+        <script
+          defer
+          data-domain="berry-blue.vercel.app"
+          data-api="/plausible/api/event"
+          src="/plausible/js/script.js"
+        ></script>
+      </head>
+
       <body className={inter.className}>{children}</body>
     </html>
   );
