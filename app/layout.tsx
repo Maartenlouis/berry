@@ -19,7 +19,7 @@ export default function RootLayout({
       <head>
         <script
           defer
-          data-domain="https://berry-blue.vercel.app"
+          data-domain="berry-blue.vercel.app"
           data-api="/plausible/api/event"
           src="/plausible/js/script.js"
         ></script>
