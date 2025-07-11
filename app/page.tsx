@@ -1,5 +1,5 @@
 "use client";
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useRef } from "react";
 import { Carousel } from "react-responsive-carousel";
 import "react-responsive-carousel/lib/styles/carousel.min.css";
 
@@ -11,6 +11,12 @@ const CornLabyrinthPuzzle = () => {
   
   // Current station index for carousel
   const [currentStation, setCurrentStation] = useState(0);
+  
+  // Show swipe hint for first-time users
+  const [showSwipeHint, setShowSwipeHint] = useState(true);
+  
+  // Refs for input fields
+  const inputRefs = useRef<(HTMLInputElement | null)[]>([]);
   
   // Solution array (21 positions for LANDWIRTSCHAFT ERLEBEN)
   const [solution, setSolution] = useState<string[]>(
@@ -27,6 +33,26 @@ const CornLabyrinthPuzzle = () => {
   );
   
   const [outputWord, setOutputWord] = useState("");
+
+  // Hide swipe hint after 5 seconds
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      setShowSwipeHint(false);
+    }, 5000);
+    return () => clearTimeout(timer);
+  }, []);
+
+  // Auto-focus input field when station changes
+  useEffect(() => {
+    // Small delay to ensure carousel animation completes
+    const timer = setTimeout(() => {
+      const input = inputRefs.current[currentStation];
+      if (input && !getPrefilledLetter(currentStation)) {
+        input.focus();
+      }
+    }, 100);
+    return () => clearTimeout(timer);
+  }, [currentStation]);
 
   // Mapping of which stations provide letters for which solution positions
   const stationToSolutionMap: { [key: number]: number } = {
@@ -112,10 +138,28 @@ const CornLabyrinthPuzzle = () => {
         </p>
 
         {/* Station Carousel */}
-        <div className="mb-8">
+        <div className="mb-8 relative">
+          {/* Swipe Hint */}
+          {showSwipeHint && currentStation === 0 && (
+            <div className="absolute inset-0 z-10 pointer-events-none flex items-center justify-center">
+              <div className="bg-black bg-opacity-70 text-white px-6 py-3 rounded-full flex items-center gap-3 animate-swipe">
+                <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 16l-4-4m0 0l4-4m-4 4h18" />
+                </svg>
+                <span className="text-lg font-medium">Wische um zu navigieren</span>
+                <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 8l4 4m0 0l-4 4m4-4H3" />
+                </svg>
+              </div>
+            </div>
+          )}
+          
           <Carousel
             selectedItem={currentStation}
-            onChange={setCurrentStation}
+            onChange={(index) => {
+              setCurrentStation(index);
+              setShowSwipeHint(false);
+            }}
             showThumbs={false}
             showStatus={true}
             showArrows={true}
@@ -145,6 +189,9 @@ const CornLabyrinthPuzzle = () => {
                     <div className="flex flex-col items-center">
                       <p className="text-lg mb-4">Trage den Lösungsbuchstaben ein:</p>
                       <input
+                        ref={(el) => {
+                          inputRefs.current[index] = el;
+                        }}
                         type="text"
                         maxLength={1}
                         value={stationInputs[index]}

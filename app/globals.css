@@ -31,3 +31,20 @@ body {
     text-wrap: balance;
   }
 }
+
+/* Swipe hint animation */
+@keyframes swipeHint {
+  0%, 100% {
+    transform: translateX(0);
+  }
+  25% {
+    transform: translateX(-10px);
+  }
+  75% {
+    transform: translateX(10px);
+  }
+}
+
+.animate-swipe {
+  animation: swipeHint 2s ease-in-out infinite;
+}
