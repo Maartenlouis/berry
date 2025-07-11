@@ -1,5 +1,6 @@
 "use client";
 import React, { useState, useEffect, useRef } from "react";
+import { useSearchParams, useRouter } from "next/navigation";
 import { Swiper, SwiperSlide } from "swiper/react";
 import { Pagination, Navigation } from "swiper/modules";
 import type { Swiper as SwiperType } from "swiper";
@@ -10,13 +11,27 @@ import "swiper/css/pagination";
 import "swiper/css/navigation";
 
 const CornLabyrinthPuzzle = () => {
-  // Station inputs (15 stations)
-  const [stationInputs, setStationInputs] = useState<string[]>(
-    Array(15).fill("")
-  );
+  const searchParams = useSearchParams();
+  const router = useRouter();
   
-  // Current station index
-  const [currentStation, setCurrentStation] = useState(0);
+  // Initialize station inputs from URL params or empty array
+  const getInitialStationInputs = () => {
+    const urlInputs = searchParams.get('stations');
+    if (urlInputs) {
+      const decoded = decodeURIComponent(urlInputs).split(',');
+      return decoded.map(input => input || '').slice(0, 15);
+    }
+    return Array(15).fill("");
+  };
+  
+  // Station inputs (15 stations)
+  const [stationInputs, setStationInputs] = useState<string[]>(getInitialStationInputs());
+  
+  // Current station index from URL or 0
+  const [currentStation, setCurrentStation] = useState(() => {
+    const urlStation = searchParams.get('station');
+    return urlStation ? parseInt(urlStation) : 0;
+  });
   
   // Show swipe hint for first-time users
   const [showSwipeHint, setShowSwipeHint] = useState(true);
@@ -42,6 +57,26 @@ const CornLabyrinthPuzzle = () => {
   );
   
   const [outputWord, setOutputWord] = useState("");
+
+  // Update URL when station inputs or current station changes
+  useEffect(() => {
+    const params = new URLSearchParams();
+    
+    // Store station inputs as comma-separated values
+    const encodedInputs = stationInputs.join(',');
+    if (encodedInputs !== Array(15).fill('').join(',')) {
+      params.set('stations', encodedInputs);
+    }
+    
+    // Store current station
+    if (currentStation > 0) {
+      params.set('station', currentStation.toString());
+    }
+    
+    // Update URL without triggering navigation
+    const newUrl = params.toString() ? `?${params.toString()}` : window.location.pathname;
+    window.history.replaceState(null, '', newUrl);
+  }, [stationInputs, currentStation]);
 
   // Hide swipe hint after 5 seconds
   useEffect(() => {
@@ -135,6 +170,22 @@ const CornLabyrinthPuzzle = () => {
     }
   };
 
+  // Handle click on solution field to navigate to corresponding station
+  const handleSolutionFieldClick = (solutionIndex: number) => {
+    // Find which station provides the letter for this solution position
+    const stationEntry = Object.entries(stationToSolutionMap).find(
+      ([_, solutionIdx]) => solutionIdx === solutionIndex
+    );
+    
+    if (stationEntry) {
+      const stationIndex = parseInt(stationEntry[0]);
+      // Navigate to the station
+      if (swiperRef.current) {
+        swiperRef.current.slideTo(stationIndex);
+      }
+    }
+  };
+
   return (
     <div className="flex flex-col items-center p-2 sm:p-4 bg-green-100 min-h-screen">
       <div className="w-full max-w-4xl bg-white rounded-lg shadow-md p-4 sm:p-8">
@@ -170,7 +221,17 @@ const CornLabyrinthPuzzle = () => {
           )}
           
           <Swiper
-            onSwiper={(swiper) => swiperRef.current = swiper}
+            onSwiper={(swiper) => {
+              swiperRef.current = swiper;
+              // Sync swiper to URL station parameter on initial load
+              const urlStation = searchParams.get('station');
+              if (urlStation) {
+                const stationIndex = parseInt(urlStation);
+                if (stationIndex >= 0 && stationIndex < 15) {
+                  swiper.slideTo(stationIndex, 0);
+                }
+              }
+            }}
             onSlideChange={(swiper) => {
               setCurrentStation(swiper.activeIndex);
               setShowSwipeHint(false);
@@ -242,12 +303,15 @@ const CornLabyrinthPuzzle = () => {
             <div className="flex justify-center gap-1 sm:gap-2">
               {solution.slice(0, 7).map((letter, index) => {
                 const isPreFilled = [3, 6].includes(index);
+                const hasCorrespondingStation = Object.values(stationToSolutionMap).includes(index);
                 return (
                   <div key={index} className="flex flex-col items-center">
                     <span className="text-xs text-gray-500 mb-1">{index + 1}</span>
-                    <div className={`w-10 h-10 sm:w-12 sm:h-12 border-2 rounded flex items-center justify-center text-base sm:text-lg font-bold ${
-                      isPreFilled ? "border-gray-400 bg-gray-100" : "border-gray-300 bg-white"
-                    }`}>
+                    <div 
+                      onClick={() => hasCorrespondingStation && !isPreFilled && handleSolutionFieldClick(index)}
+                      className={`w-10 h-10 sm:w-12 sm:h-12 border-2 rounded flex items-center justify-center text-base sm:text-lg font-bold ${
+                        isPreFilled ? "border-gray-400 bg-gray-100" : "border-gray-300 bg-white"
+                      } ${hasCorrespondingStation && !isPreFilled ? "cursor-pointer hover:border-blue-400 transition-colors" : ""}`}>
                       {letter}
                     </div>
                   </div>
@@ -260,12 +324,15 @@ const CornLabyrinthPuzzle = () => {
               {solution.slice(7, 14).map((letter, index) => {
                 const actualIndex = index + 7;
                 const isPreFilled = [9, 11].includes(actualIndex);
+                const hasCorrespondingStation = Object.values(stationToSolutionMap).includes(actualIndex);
                 return (
                   <div key={actualIndex} className="flex flex-col items-center">
                     <span className="text-xs text-gray-500 mb-1">{actualIndex + 1}</span>
-                    <div className={`w-10 h-10 sm:w-12 sm:h-12 border-2 rounded flex items-center justify-center text-base sm:text-lg font-bold ${
-                      isPreFilled ? "border-gray-400 bg-gray-100" : "border-gray-300 bg-white"
-                    }`}>
+                    <div 
+                      onClick={() => hasCorrespondingStation && !isPreFilled && handleSolutionFieldClick(actualIndex)}
+                      className={`w-10 h-10 sm:w-12 sm:h-12 border-2 rounded flex items-center justify-center text-base sm:text-lg font-bold ${
+                        isPreFilled ? "border-gray-400 bg-gray-100" : "border-gray-300 bg-white"
+                      } ${hasCorrespondingStation && !isPreFilled ? "cursor-pointer hover:border-blue-400 transition-colors" : ""}`}>
                       {letter}
                     </div>
                   </div>
@@ -278,12 +345,15 @@ const CornLabyrinthPuzzle = () => {
               {solution.slice(14, 21).map((letter, index) => {
                 const actualIndex = index + 14;
                 const isPreFilled = [17, 19].includes(actualIndex);
+                const hasCorrespondingStation = Object.values(stationToSolutionMap).includes(actualIndex);
                 return (
                   <div key={actualIndex} className="flex flex-col items-center">
                     <span className="text-xs text-gray-500 mb-1">{actualIndex + 1}</span>
-                    <div className={`w-10 h-10 sm:w-12 sm:h-12 border-2 rounded flex items-center justify-center text-base sm:text-lg font-bold ${
-                      isPreFilled ? "border-gray-400 bg-gray-100" : "border-gray-300 bg-white"
-                    }`}>
+                    <div 
+                      onClick={() => hasCorrespondingStation && !isPreFilled && handleSolutionFieldClick(actualIndex)}
+                      className={`w-10 h-10 sm:w-12 sm:h-12 border-2 rounded flex items-center justify-center text-base sm:text-lg font-bold ${
+                        isPreFilled ? "border-gray-400 bg-gray-100" : "border-gray-300 bg-white"
+                      } ${hasCorrespondingStation && !isPreFilled ? "cursor-pointer hover:border-blue-400 transition-colors" : ""}`}>
                       {letter}
                     </div>
                   </div>
@@ -310,4 +380,12 @@ const CornLabyrinthPuzzle = () => {
   );
 };
 
-export default CornLabyrinthPuzzle;
+function CornLabyrinthPuzzleWrapper() {
+  return (
+    <React.Suspense fallback={<div className="flex flex-col items-center p-2 sm:p-4 bg-green-100 min-h-screen"><div className="w-full max-w-4xl bg-white rounded-lg shadow-md p-4 sm:p-8 text-center">Lade...</div></div>}>
+      <CornLabyrinthPuzzle />
+    </React.Suspense>
+  );
+}
+
+export default CornLabyrinthPuzzleWrapper;
