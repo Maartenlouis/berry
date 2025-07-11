@@ -48,3 +48,44 @@ body {
 .animate-swipe {
   animation: swipeHint 2s ease-in-out infinite;
 }
+
+/* Swiper custom styles */
+.station-swiper {
+  padding-bottom: 40px;
+}
+
+.station-swiper .swiper-pagination {
+  bottom: 0;
+}
+
+.station-swiper .swiper-pagination-bullet {
+  width: 8px;
+  height: 8px;
+  background: #d1d5db;
+  opacity: 1;
+}
+
+.station-swiper .swiper-pagination-bullet-active {
+  background: #3b82f6;
+  width: 24px;
+  border-radius: 4px;
+}
+
+.station-swiper .swiper-button-next,
+.station-swiper .swiper-button-prev {
+  color: #3b82f6;
+  width: 40px;
+  height: 40px;
+}
+
+.station-swiper .swiper-button-next:after,
+.station-swiper .swiper-button-prev:after {
+  font-size: 20px;
+}
+
+@media (max-width: 640px) {
+  .station-swiper .swiper-button-next,
+  .station-swiper .swiper-button-prev {
+    display: none;
+  }
+}

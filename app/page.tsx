@@ -1,7 +1,13 @@
 "use client";
 import React, { useState, useEffect, useRef } from "react";
-import { Carousel } from "react-responsive-carousel";
-import "react-responsive-carousel/lib/styles/carousel.min.css";
+import { Swiper, SwiperSlide } from "swiper/react";
+import { Pagination, Navigation } from "swiper/modules";
+import type { Swiper as SwiperType } from "swiper";
+
+// Import Swiper styles
+import "swiper/css";
+import "swiper/css/pagination";
+import "swiper/css/navigation";
 
 const CornLabyrinthPuzzle = () => {
   // Station inputs (15 stations)
@@ -9,7 +15,7 @@ const CornLabyrinthPuzzle = () => {
     Array(15).fill("")
   );
   
-  // Current station index for carousel
+  // Current station index
   const [currentStation, setCurrentStation] = useState(0);
   
   // Show swipe hint for first-time users
@@ -17,6 +23,9 @@ const CornLabyrinthPuzzle = () => {
   
   // Refs for input fields
   const inputRefs = useRef<(HTMLInputElement | null)[]>([]);
+  
+  // Swiper instance ref
+  const swiperRef = useRef<SwiperType | null>(null);
   
   // Solution array (21 positions for LANDWIRTSCHAFT ERLEBEN)
   const [solution, setSolution] = useState<string[]>(
@@ -44,13 +53,13 @@ const CornLabyrinthPuzzle = () => {
 
   // Auto-focus input field when station changes
   useEffect(() => {
-    // Small delay to ensure carousel animation completes
+    // Small delay to ensure swiper animation completes
     const timer = setTimeout(() => {
       const input = inputRefs.current[currentStation];
       if (input && !getPrefilledLetter(currentStation)) {
         input.focus();
       }
-    }, 100);
+    }, 300);
     return () => clearTimeout(timer);
   }, [currentStation]);
 
@@ -117,8 +126,14 @@ const CornLabyrinthPuzzle = () => {
     const newInputs = [...stationInputs];
     newInputs[currentStation] = value.toUpperCase();
     setStationInputs(newInputs);
+    
+    // Auto-advance to next station if not the last one
+    if (value && currentStation < 14 && swiperRef.current) {
+      setTimeout(() => {
+        swiperRef.current?.slideNext();
+      }, 300);
+    }
   };
-
 
   return (
     <div className="flex flex-col items-center p-2 sm:p-4 bg-green-100 min-h-screen">
@@ -154,61 +169,68 @@ const CornLabyrinthPuzzle = () => {
             </div>
           )}
           
-          <Carousel
-            selectedItem={currentStation}
-            onChange={(index) => {
-              setCurrentStation(index);
+          <Swiper
+            onSwiper={(swiper) => swiperRef.current = swiper}
+            onSlideChange={(swiper) => {
+              setCurrentStation(swiper.activeIndex);
               setShowSwipeHint(false);
             }}
-            showThumbs={false}
-            showStatus={true}
-            showArrows={true}
-            swipeable={true}
-            emulateTouch={true}
-            infiniteLoop={true}
-            centerMode={false}
-            centerSlidePercentage={100}
-            className="station-carousel"
+            spaceBetween={50}
+            slidesPerView={1}
+            pagination={{ 
+              clickable: true,
+              bulletActiveClass: "swiper-pagination-bullet-active",
+            }}
+            navigation={true}
+            modules={[Pagination, Navigation]}
+            className="station-swiper"
+            threshold={20}
+            touchRatio={1}
+            touchReleaseOnEdges={true}
+            resistanceRatio={0.85}
+            loop={false}
           >
             {stationInputs.map((_, index) => {
               const prefilledLetter = getPrefilledLetter(index);
               const isPreFilled = prefilledLetter !== "";
               
               return (
-                <div key={index} className="py-8 px-4">
-                  <h3 className="text-3xl font-bold mb-6">Station {index + 1}</h3>
-                  
-                  {isPreFilled ? (
-                    <div className="flex flex-col items-center">
-                      <p className="text-lg mb-4">Diese Station hat einen vorgegebenen Buchstaben:</p>
-                      <div className="w-24 h-24 border-4 border-gray-400 rounded-lg flex items-center justify-center bg-gray-100">
-                        <span className="text-4xl font-bold">{prefilledLetter}</span>
+                <SwiperSlide key={index}>
+                  <div className="py-8 px-4">
+                    <h3 className="text-3xl font-bold mb-6 text-center">Station {index + 1}</h3>
+                    
+                    {isPreFilled ? (
+                      <div className="flex flex-col items-center">
+                        <p className="text-lg mb-4">Diese Station hat einen vorgegebenen Buchstaben:</p>
+                        <div className="w-24 h-24 border-4 border-gray-400 rounded-lg flex items-center justify-center bg-gray-100">
+                          <span className="text-4xl font-bold">{prefilledLetter}</span>
+                        </div>
                       </div>
-                    </div>
-                  ) : (
-                    <div className="flex flex-col items-center">
-                      <p className="text-lg mb-4">Trage den Lösungsbuchstaben ein:</p>
-                      <input
-                        ref={(el) => {
-                          inputRefs.current[index] = el;
-                        }}
-                        type="text"
-                        maxLength={1}
-                        value={stationInputs[index]}
-                        onChange={(e) => handleStationInputChange(e.target.value)}
-                        className="w-24 h-24 text-center border-4 border-blue-400 rounded-lg text-4xl font-bold focus:outline-none focus:border-blue-600"
-                        placeholder="?"
-                      />
-                    </div>
-                  )}
-                  
-                  <p className="text-sm text-gray-600 mt-4">
-                    {isPreFilled ? "Weiter zur nächsten Station →" : "Buchstabe eingeben und weiter →"}
-                  </p>
-                </div>
+                    ) : (
+                      <div className="flex flex-col items-center">
+                        <p className="text-lg mb-4">Trage den Lösungsbuchstaben ein:</p>
+                        <input
+                          ref={(el) => {
+                            inputRefs.current[index] = el;
+                          }}
+                          type="text"
+                          maxLength={1}
+                          value={stationInputs[index]}
+                          onChange={(e) => handleStationInputChange(e.target.value)}
+                          className="w-24 h-24 text-center border-4 border-blue-400 rounded-lg text-4xl font-bold focus:outline-none focus:border-blue-600"
+                          placeholder="?"
+                        />
+                      </div>
+                    )}
+                    
+                    <p className="text-sm text-gray-600 mt-4 text-center">
+                      {isPreFilled ? "Weiter zur nächsten Station →" : "Buchstabe eingeben und weiter →"}
+                    </p>
+                  </div>
+                </SwiperSlide>
               );
             })}
-          </Carousel>
+          </Swiper>
         </div>
 
         {/* Solution Display */}
