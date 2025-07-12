@@ -4,6 +4,7 @@ import { useSearchParams, useRouter } from "next/navigation";
 import { Swiper, SwiperSlide } from "swiper/react";
 import { Pagination, Navigation } from "swiper/modules";
 import type { Swiper as SwiperType } from "swiper";
+import SuccessAnimation from "../components/SuccessAnimation";
 
 // Import Swiper styles
 import "swiper/css";
@@ -14,24 +15,34 @@ const CornLabyrinthPuzzle = () => {
   const searchParams = useSearchParams();
   const router = useRouter();
   
-  // Initialize station inputs from URL params or empty array
-  const getInitialStationInputs = () => {
-    const urlInputs = searchParams.get('stations');
-    if (urlInputs) {
-      const decoded = decodeURIComponent(urlInputs).split(',');
-      return decoded.map(input => input || '').slice(0, 15);
-    }
-    return Array(15).fill("");
-  };
-  
   // Station inputs (15 stations)
-  const [stationInputs, setStationInputs] = useState<string[]>(getInitialStationInputs());
+  const [stationInputs, setStationInputs] = useState<string[]>(Array(15).fill(""));
   
-  // Current station index from URL or 0
-  const [currentStation, setCurrentStation] = useState(() => {
-    const urlStation = searchParams.get('station');
-    return urlStation ? parseInt(urlStation) : 0;
-  });
+  // Current station index
+  const [currentStation, setCurrentStation] = useState(0);
+  
+  // Initialize from URL params after mount
+  const [isInitialized, setIsInitialized] = useState(false);
+  
+  useEffect(() => {
+    if (!isInitialized) {
+      const urlInputs = searchParams.get('stations');
+      if (urlInputs) {
+        const decoded = decodeURIComponent(urlInputs).split(',');
+        setStationInputs(decoded.map(input => input || '').slice(0, 15));
+      }
+      
+      const urlStation = searchParams.get('station');
+      if (urlStation) {
+        const stationIndex = parseInt(urlStation);
+        if (stationIndex >= 0 && stationIndex < 15) {
+          setCurrentStation(stationIndex);
+        }
+      }
+      
+      setIsInitialized(true);
+    }
+  }, [searchParams, isInitialized]);
   
   // Show swipe hint for first-time users
   const [showSwipeHint, setShowSwipeHint] = useState(true);
@@ -57,6 +68,8 @@ const CornLabyrinthPuzzle = () => {
   );
   
   const [outputWord, setOutputWord] = useState("");
+  const [showSuccess, setShowSuccess] = useState(false);
+  const [hasShownSuccess, setHasShownSuccess] = useState(false);
 
   // Update URL when station inputs or current station changes
   useEffect(() => {
@@ -155,6 +168,12 @@ const CornLabyrinthPuzzle = () => {
     const fullWord = newSolution.join("");
     const formattedWord = fullWord.slice(0, 14) + " " + fullWord.slice(14);
     setOutputWord(formattedWord);
+    
+    // Check if the solution is correct
+    if (fullWord === "LANDWIRTSCHAFTERLEBEN" && !hasShownSuccess) {
+      setShowSuccess(true);
+      setHasShownSuccess(true);
+    }
   }, [stationInputs]);
 
   const handleStationInputChange = (value: string) => {
@@ -186,8 +205,28 @@ const CornLabyrinthPuzzle = () => {
     }
   };
 
+  // Show loading state during initialization to prevent hydration errors
+  if (!isInitialized) {
+    return (
+      <div className="flex flex-col items-center p-2 sm:p-4 bg-green-100 min-h-screen">
+        <div className="w-full max-w-4xl bg-white rounded-lg shadow-md p-4 sm:p-8 text-center">
+          <img
+            src="./ErdbeerhofLogo.png"
+            alt="Erdbeerhof Logo"
+            className="mx-auto mb-4 w-32 sm:w-auto"
+          />
+          <p className="text-lg">Lade...</p>
+        </div>
+      </div>
+    );
+  }
+  
   return (
-    <div className="flex flex-col items-center p-2 sm:p-4 bg-green-100 min-h-screen">
+    <>
+      {showSuccess && (
+        <SuccessAnimation onComplete={() => setShowSuccess(false)} />
+      )}
+      <div className="flex flex-col items-center p-2 sm:p-4 bg-green-100 min-h-screen">
       <div className="w-full max-w-4xl bg-white rounded-lg shadow-md p-4 sm:p-8">
         <img
           src="./ErdbeerhofLogo.png"
@@ -223,13 +262,9 @@ const CornLabyrinthPuzzle = () => {
           <Swiper
             onSwiper={(swiper) => {
               swiperRef.current = swiper;
-              // Sync swiper to URL station parameter on initial load
-              const urlStation = searchParams.get('station');
-              if (urlStation) {
-                const stationIndex = parseInt(urlStation);
-                if (stationIndex >= 0 && stationIndex < 15) {
-                  swiper.slideTo(stationIndex, 0);
-                }
+              // Sync swiper to current station after initialization
+              if (isInitialized && currentStation > 0) {
+                swiper.slideTo(currentStation, 0);
               }
             }}
             onSlideChange={(swiper) => {
@@ -377,6 +412,7 @@ const CornLabyrinthPuzzle = () => {
         </p>
       </div>
     </div>
+    </>
   );
 };
 

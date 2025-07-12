@@ -8,14 +8,6 @@
   --background-end-rgb: 255, 255, 255;
 }
 
-@media (prefers-color-scheme: dark) {
-  :root {
-    --foreground-rgb: 255, 255, 255;
-    --background-start-rgb: 0, 0, 0;
-    --background-end-rgb: 0, 0, 0;
-  }
-}
-
 body {
   color: rgb(var(--foreground-rgb));
   background: linear-gradient(
@@ -88,4 +80,49 @@ body {
   .station-swiper .swiper-button-prev {
     display: none;
   }
+}
+
+/* Success animation styles */
+@keyframes bounce-in {
+  0% {
+    transform: scale(0) rotate(180deg);
+    opacity: 0;
+  }
+  50% {
+    transform: scale(1.1) rotate(360deg);
+  }
+  100% {
+    transform: scale(1) rotate(360deg);
+    opacity: 1;
+  }
+}
+
+.animate-bounce-in {
+  animation: bounce-in 0.8s cubic-bezier(0.68, -0.55, 0.265, 1.55);
+}
+
+@keyframes pulse {
+  0%, 100% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0.5;
+  }
+}
+
+.animate-pulse {
+  animation: pulse 2s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+}
+
+@keyframes spin-once {
+  from {
+    transform: rotate(0deg);
+  }
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+.animate-spin-once {
+  animation: spin-once 0.8s ease-out;
 }
